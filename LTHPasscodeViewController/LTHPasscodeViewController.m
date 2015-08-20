@@ -18,13 +18,13 @@ options:NSNumericSearch] != NSOrderedAscending)
 
 #if __IPHONE_OS_VERSION_MIN_REQUIRED >= 70000
 #define kPasscodeCharWidth [_passcodeCharacter sizeWithAttributes: @{NSFontAttributeName : _passcodeFont}].width
-#define kFailedAttemptLabelWidth (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad ? [_failedAttemptLabel.text sizeWithAttributes: @{NSFontAttributeName : _labelFont}].width + 60.0f : [_failedAttemptLabel.text sizeWithAttributes: @{NSFontAttributeName : _labelFont}].width + 30.0f)
+#define kFailedAttemptLabelWidth (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad ? [_failedAttemptLabel.text sizeWithAttributes: @{NSFontAttributeName : _labelFont}].width + 20.0f : [_failedAttemptLabel.text sizeWithAttributes: @{NSFontAttributeName : _labelFont}].width + 30.0f)
 #define kFailedAttemptLabelHeight [_failedAttemptLabel.text sizeWithAttributes: @{NSFontAttributeName : _labelFont}].height
 #define kEnterPasscodeLabelWidth [_enterPasscodeLabel.text sizeWithAttributes: @{NSFontAttributeName : _labelFont}].width
 #else
 // Thanks to Kent Nguyen - https://github.com/kentnguyen
 #define kPasscodeCharWidth [_passcodeCharacter sizeWithFont:_passcodeFont].width
-#define kFailedAttemptLabelWidth (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad ? [_failedAttemptLabel.text sizeWithFont:_labelFont].width + 60.0f : [_failedAttemptLabel.text sizeWithFont:_labelFont].width + 20.0f)
+#define kFailedAttemptLabelWidth (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad ? [_failedAttemptLabel.text sizeWithFont:_labelFont].width + 20.0f : [_failedAttemptLabel.text sizeWithFont:_labelFont].width + 20.0f)
 #define kFailedAttemptLabelHeight [_failedAttemptLabel.text sizeWithFont:_labelFont].height
 #define kEnterPasscodeLabelWidth [_enterPasscodeLabel.text sizeWithFont:_labelFont].width
 #endif
@@ -1331,7 +1331,8 @@ static const CGFloat LTHPasscodeiPadKeyboardOffset = 25;
 - (void)_askForNewPasscode {
 	_isUserBeingAskedForNewPasscode = YES;
 	_isUserConfirmingPasscode = NO;
-    
+	_currentDigitPasscode = @"";
+	
     // Update layout considering type
     [self.view setNeedsUpdateConstraints];
     
@@ -1353,6 +1354,7 @@ static const CGFloat LTHPasscodeiPadKeyboardOffset = 25;
 	_isUserBeingAskedForNewPasscode = YES;
 	_isUserConfirmingPasscode = NO;
 	_tempPasscode = @"";
+	_currentDigitPasscode = @"";
 	
 	CATransition *transition = [CATransition animation];
 	[transition setDelegate: self];
@@ -1369,6 +1371,7 @@ static const CGFloat LTHPasscodeiPadKeyboardOffset = 25;
 
 
 - (void)_askForConfirmationPasscode {
+	_currentDigitPasscode = @"";
 	_isUserBeingAskedForNewPasscode = NO;
 	_isUserConfirmingPasscode = YES;
 	_failedAttemptLabel.hidden = YES;

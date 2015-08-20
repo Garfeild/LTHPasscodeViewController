@@ -58,7 +58,8 @@
 	
 	[LTHPasscodeViewController sharedUser].delegate = self;
 	[LTHPasscodeViewController sharedUser].maxNumberOfAllowedFailedAttempts = 3;
-    
+	[LTHPasscodeViewController sharedUser].verticalOffset = -85;
+	
 	_changePasscode = [UIButton buttonWithType: UIButtonTypeCustom];
 	_enablePasscode = [UIButton buttonWithType: UIButtonTypeCustom];
 	_testPasscode = [UIButton buttonWithType: UIButtonTypeCustom];
