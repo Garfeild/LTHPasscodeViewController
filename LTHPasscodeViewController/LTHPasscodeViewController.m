@@ -18,16 +18,20 @@ options:NSNumericSearch] != NSOrderedAscending)
 
 #if __IPHONE_OS_VERSION_MIN_REQUIRED >= 70000
 #define kPasscodeCharWidth [_passcodeCharacter sizeWithAttributes: @{NSFontAttributeName : _passcodeFont}].width
-#define kFailedAttemptLabelWidth (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad ? [_failedAttemptLabel.text sizeWithAttributes: @{NSFontAttributeName : _labelFont}].width + 60.0f : [_failedAttemptLabel.text sizeWithAttributes: @{NSFontAttributeName : _labelFont}].width + 30.0f)
+#define kFailedAttemptLabelWidth (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad ? [_failedAttemptLabel.text sizeWithAttributes: @{NSFontAttributeName : _labelFont}].width + 20.0f : [_failedAttemptLabel.text sizeWithAttributes: @{NSFontAttributeName : _labelFont}].width + 30.0f)
 #define kFailedAttemptLabelHeight [_failedAttemptLabel.text sizeWithAttributes: @{NSFontAttributeName : _labelFont}].height
 #define kEnterPasscodeLabelWidth [_enterPasscodeLabel.text sizeWithAttributes: @{NSFontAttributeName : _labelFont}].width
 #else
 // Thanks to Kent Nguyen - https://github.com/kentnguyen
 #define kPasscodeCharWidth [_passcodeCharacter sizeWithFont:_passcodeFont].width
-#define kFailedAttemptLabelWidth (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad ? [_failedAttemptLabel.text sizeWithFont:_labelFont].width + 60.0f : [_failedAttemptLabel.text sizeWithFont:_labelFont].width + 20.0f)
+#define kFailedAttemptLabelWidth (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad ? [_failedAttemptLabel.text sizeWithFont:_labelFont].width + 20.0f : [_failedAttemptLabel.text sizeWithFont:_labelFont].width + 20.0f)
 #define kFailedAttemptLabelHeight [_failedAttemptLabel.text sizeWithFont:_labelFont].height
 #define kEnterPasscodeLabelWidth [_enterPasscodeLabel.text sizeWithFont:_labelFont].width
 #endif
+
+static const CGFloat LTHPasscodeiPadPopUpWidth = 320;
+static const CGFloat LTHPasscodeiPadPopUpHeight = 480;
+static const CGFloat LTHPasscodeiPadKeyboardOffset = 25;
 
 @interface LTHPasscodeViewController () <UITextFieldDelegate>
 @property (nonatomic, strong) UIView      *coverView;
@@ -44,6 +48,9 @@ options:NSNumericSearch] != NSOrderedAscending)
 @property (nonatomic, strong) UILabel     *failedAttemptLabel;
 @property (nonatomic, strong) UILabel     *enterPasscodeLabel;
 @property (nonatomic, strong) UIButton    *OKButton;
+
+@property (nonatomic, strong) UIView			*numPadView;
+@property (nonatomic, strong) NSMutableArray	*numPadButtons;
 
 @property (nonatomic, strong) NSString    *tempPasscode;
 @property (nonatomic, assign) NSInteger   failedAttempts;
@@ -63,11 +70,15 @@ options:NSNumericSearch] != NSOrderedAscending)
 @property (nonatomic, assign) BOOL        isUserTurningPasscodeOff;
 @property (nonatomic, assign) BOOL        isUserChangingPasscode;
 @property (nonatomic, assign) BOOL        isUserEnablingPasscode;
+@property (nonatomic, assign) BOOL        isUserEnterPasscode;
 @property (nonatomic, assign) BOOL        isUserSwitchingBetweenPasscodeModes;// simple/complex
 @property (nonatomic, assign) BOOL        timerStartInSeconds;
 @property (nonatomic, assign) BOOL        isUsingTouchID;
 @property (nonatomic, assign) BOOL        useFallbackPasscode;
 @property (nonatomic, assign) BOOL        isAppNotificationsObserved;
+
+@property (nonatomic) NSInteger currentDigitTextFieldIndex;
+@property (nonatomic) NSString *currentDigitPasscode;
 
 #if !(TARGET_IPHONE_SIMULATOR)
 @property (nonatomic, strong) LAContext   *context;
@@ -328,8 +339,12 @@ options:NSNumericSearch] != NSOrderedAscending)
 #pragma mark - View life
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.view.backgroundColor = _backgroundColor;
-    
+	
+	self.view.backgroundColor = _backgroundColor;
+	if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad && !_displayedAsLockScreen) {
+		self.view.frame = CGRectMake(0, 0, LTHPasscodeiPadPopUpWidth, LTHPasscodeiPadPopUpHeight);
+	}
+	
     _backgroundImageView = [[UIImageView alloc] initWithFrame:self.view.frame];
     [self.view addSubview:_backgroundImageView];
     _backgroundImageView.image = _backgroundImage;
@@ -337,11 +352,16 @@ options:NSNumericSearch] != NSOrderedAscending)
 	_failedAttempts = 0;
 	_animatingView = [[UIView alloc] initWithFrame: self.view.frame];
 	[self.view addSubview: _animatingView];
-    
+	
+	_numPadView = [[UIView alloc] initWithFrame: CGRectMake(0, self.view.frame.size.height * 0.5 + LTHPasscodeiPadKeyboardOffset, self.view.frame.size.width, self.view.frame.size.height * 0.5 - LTHPasscodeiPadKeyboardOffset)];
+	_numPadView.backgroundColor = [UIColor grayColor];
+	[_animatingView addSubview:_numPadView];
+	
 	[self _setupViews];
     [self _setupLabels];
     [self _setupDigitFields];
     [self _setupOKButton];
+	[self _setupNumPadButtons];
 	
 	_passcodeTextField = [[UITextField alloc] initWithFrame: CGRectZero];
 	_passcodeTextField.delegate = self;
@@ -354,6 +374,22 @@ options:NSNumericSearch] != NSOrderedAscending)
 
 - (void)viewWillAppear:(BOOL)animated {
 	[super viewWillAppear:animated];
+	
+	if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad && !_displayedAsLockScreen) {
+		self.view.frame = CGRectMake(0, 0, LTHPasscodeiPadPopUpWidth, LTHPasscodeiPadPopUpHeight);
+		_numPadView.hidden = NO;
+	}
+	else {
+		_numPadView.hidden = YES;
+	}
+	_backgroundImageView.frame = self.view.frame;
+	_animatingView.frame = self.view.frame;
+	_numPadView.frame = CGRectMake(0, self.view.frame.size.height * 0.5 + LTHPasscodeiPadKeyboardOffset, self.view.frame.size.width, self.view.frame.size.height * 0.5 - LTHPasscodeiPadKeyboardOffset);
+	_currentDigitTextFieldIndex = 0;
+	_currentDigitPasscode = @"";
+	
+	[self.view setNeedsUpdateConstraints];
+	
     if (!self.isAppNotificationsObserved) {
         [self _addObservers];
         self.isAppNotificationsObserved = YES;
@@ -361,18 +397,22 @@ options:NSNumericSearch] != NSOrderedAscending)
 	
     _backgroundImageView.image = _backgroundImage;
     if (!_isUsingTouchID) {
-        [_passcodeTextField becomeFirstResponder];
+		if (UI_USER_INTERFACE_IDIOM() != UIUserInterfaceIdiomPad || _displayedAsLockScreen) {
+			[_passcodeTextField becomeFirstResponder];
+		}
     }
 }
 
 
 - (void)viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
-    if (!_passcodeTextField.isFirstResponder && (!_isUsingTouchID || _isUserChangingPasscode || _isUserBeingAskedForNewPasscode || _isUserConfirmingPasscode || _isUserEnablingPasscode || _isUserSwitchingBetweenPasscodeModes || _isUserTurningPasscodeOff)) {
-        [_passcodeTextField becomeFirstResponder];
+    if (!_passcodeTextField.isFirstResponder && (!_isUsingTouchID || _isUserChangingPasscode || _isUserBeingAskedForNewPasscode || _isUserConfirmingPasscode || _isUserEnablingPasscode || _isUserSwitchingBetweenPasscodeModes || _isUserTurningPasscodeOff || _isUserEnterPasscode)) {
+		if (UI_USER_INTERFACE_IDIOM() != UIUserInterfaceIdiomPad || _displayedAsLockScreen) {
+			[_passcodeTextField becomeFirstResponder];
+		}
         _animatingView.hidden = NO;
     }
-    if (_isUsingTouchID && !_isUserChangingPasscode && !_isUserBeingAskedForNewPasscode && !_isUserConfirmingPasscode && !_isUserEnablingPasscode && !_isUserSwitchingBetweenPasscodeModes && !_isUserTurningPasscodeOff) {
+    if (_isUsingTouchID && !_isUserChangingPasscode && !_isUserBeingAskedForNewPasscode && !_isUserConfirmingPasscode && !_isUserEnablingPasscode && !_isUserSwitchingBetweenPasscodeModes && !_isUserTurningPasscodeOff && !_isUserEnterPasscode) {
         [_passcodeTextField resignFirstResponder];
         _animatingView.hidden = _isUsingTouchID;
     }
@@ -394,6 +434,7 @@ options:NSNumericSearch] != NSOrderedAscending)
 	_isUserConfirmingPasscode = NO;
 	_isUserEnablingPasscode = NO;
 	_isUserTurningPasscodeOff = NO;
+	_isUserEnterPasscode = NO;
     _isUserSwitchingBetweenPasscodeModes = NO;
 	[self _resetUI];
 	[_passcodeTextField resignFirstResponder];
@@ -542,7 +583,91 @@ options:NSNumericSearch] != NSOrderedAscending)
 }
 
 
-- (UITextField *)_makeDigitField{
+- (void)_setupNumPadButtons {
+	CGSize buttonSize = CGSizeMake(103, 53);
+	NSInteger row = 0;
+	NSInteger column = 0;
+	CGFloat x = 0;
+	CGFloat y = 0;
+	for (NSInteger i = 0; i < 12; ++i) {
+		CGFloat width = column == 1 ? buttonSize.width + 10 : buttonSize.width;
+		CGFloat height = buttonSize.height;
+		
+		if (column == 3) {
+			column = 0;
+			x = 0;
+			y += (height + 1);
+			++row;
+		}
+		
+		UIButton *button = [[UIButton alloc] initWithFrame: CGRectMake(x, y, width, height)];
+		button.tag = i;
+		[button setImage:[UIImage imageNamed:[NSString stringWithFormat:@"%@.png", @(i + 1)]] forState:UIControlStateNormal];
+		button.backgroundColor = [UIColor whiteColor];
+		if (i == 9) {
+			button.enabled = NO;
+		}
+		else {
+			[button addTarget:self action:@selector(_numPadTouchUpInside:) forControlEvents:UIControlEventTouchUpInside];
+		}
+		
+		[_numPadView addSubview:button];
+		
+		x += (width + 1);
+		++column;
+	}
+}
+
+
+- (void)_numPadTouchUpInside:(UIButton *)button {
+
+	NSInteger tag = button.tag;
+	if (tag < 9) {
+		[self _updateTextFieldFromNumPad:[NSString stringWithFormat:@"%@", @(tag + 1)]];
+		++_currentDigitTextFieldIndex;
+	}
+	else if (tag == 10) {
+		[self _updateTextFieldFromNumPad:[NSString stringWithFormat:@"%@", @(0)]];
+		++_currentDigitTextFieldIndex;
+	}
+	else if (tag == 11) {
+		[self _updateTextFieldFromNumPad:@""];
+	}
+}
+
+
+- (void)_updateTextFieldFromNumPad:(NSString *)symbol {
+	
+	if (self.isSimple) {
+		if (symbol.length > 0) {
+			_currentDigitPasscode = [_currentDigitPasscode stringByAppendingString:symbol];
+		}
+		else {
+			if (_currentDigitPasscode.length > 0) {
+				_currentDigitPasscode = [_currentDigitPasscode substringToIndex:[_currentDigitPasscode length] - 1];
+			}
+		}
+		
+		if (_currentDigitPasscode.length >= 1) _firstDigitTextField.secureTextEntry = YES;
+		else _firstDigitTextField.secureTextEntry = NO;
+		if (_currentDigitPasscode.length >= 2) _secondDigitTextField.secureTextEntry = YES;
+		else _secondDigitTextField.secureTextEntry = NO;
+		if (_currentDigitPasscode.length >= 3) _thirdDigitTextField.secureTextEntry = YES;
+		else _thirdDigitTextField.secureTextEntry = NO;
+		if (_currentDigitPasscode.length >= 4) _fourthDigitTextField.secureTextEntry = YES;
+		else _fourthDigitTextField.secureTextEntry = NO;
+		
+		if (_currentDigitPasscode.length == 4) {
+			// Make the last bullet show up
+			[self performSelector: @selector(_validatePasscode:)
+					   withObject: _currentDigitPasscode
+					   afterDelay: 0.15];
+		}
+	}
+}
+
+
+- (UITextField *)_makeDigitField {
     UITextField *field = [[UITextField alloc] initWithFrame:CGRectZero];
     field.backgroundColor = _passcodeBackgroundColor;
     field.textAlignment = NSTextAlignmentCenter;
@@ -946,6 +1071,12 @@ options:NSNumericSearch] != NSOrderedAscending)
 	UINavigationController *navController =
 	[[UINavigationController alloc] initWithRootViewController:self];
 	
+	if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
+		navController.modalPresentationStyle = UIModalPresentationFormSheet;
+		navController.modalTransitionStyle = UIModalTransitionStyleCrossDissolve;
+		navController.preferredContentSize = CGSizeMake(320, 480);
+	}
+	
 	// Make sure nav bar for logout is off the screen
 	[self.navBar removeFromSuperview];
 	self.navBar = nil;
@@ -997,6 +1128,15 @@ options:NSNumericSearch] != NSOrderedAscending)
 }
 
 
+- (void)showForEnteringPasscodeInViewController:(UIViewController *)viewController asModal:(BOOL)isModal
+{
+	_displayedAsModal = isModal;
+	[self _prepareForEnteringPassCode];
+	[self _prepareNavigationControllerWithController:viewController];
+	self.title = NSLocalizedStringFromTable(self.enterPasscodeString, _localizationTableName, @"");
+}
+
+
 #pragma mark - Preparing
 - (void)_prepareAsLockScreen {
     // In case the user leaves the app while changing/disabling Passcode.
@@ -1008,6 +1148,7 @@ options:NSNumericSearch] != NSOrderedAscending)
 	_isUserChangingPasscode = NO;
 	_isUserConfirmingPasscode = NO;
 	_isUserEnablingPasscode = NO;
+	_isUserEnterPasscode = NO;
     _isUserSwitchingBetweenPasscodeModes = NO;
     
 	[self _resetUI];
@@ -1024,6 +1165,7 @@ options:NSNumericSearch] != NSOrderedAscending)
 	_isUserChangingPasscode = YES;
 	_isUserConfirmingPasscode = NO;
 	_isUserEnablingPasscode = NO;
+	_isUserEnterPasscode = NO;
     
 	[self _resetUI];
 }
@@ -1036,6 +1178,7 @@ options:NSNumericSearch] != NSOrderedAscending)
 	_isUserChangingPasscode = NO;
 	_isUserConfirmingPasscode = NO;
 	_isUserEnablingPasscode = NO;
+	_isUserEnterPasscode = NO;
     _isUserSwitchingBetweenPasscodeModes = NO;
     
 	[self _resetUI];
@@ -1049,8 +1192,23 @@ options:NSNumericSearch] != NSOrderedAscending)
 	_isUserChangingPasscode = NO;
 	_isUserConfirmingPasscode = NO;
 	_isUserEnablingPasscode = YES;
+	_isUserEnterPasscode = NO;
     _isUserSwitchingBetweenPasscodeModes = NO;
     
+	[self _resetUI];
+}
+
+
+- (void)_prepareForEnteringPassCode {
+	_isCurrentlyOnScreen = YES;
+	_displayedAsLockScreen = NO;
+	_isUserTurningPasscodeOff = NO;
+	_isUserChangingPasscode = NO;
+	_isUserConfirmingPasscode = NO;
+	_isUserEnablingPasscode = NO;
+	_isUserEnterPasscode = YES;
+	_isUserSwitchingBetweenPasscodeModes = NO;
+	
 	[self _resetUI];
 }
 
@@ -1173,7 +1331,8 @@ options:NSNumericSearch] != NSOrderedAscending)
 - (void)_askForNewPasscode {
 	_isUserBeingAskedForNewPasscode = YES;
 	_isUserConfirmingPasscode = NO;
-    
+	_currentDigitPasscode = @"";
+	
     // Update layout considering type
     [self.view setNeedsUpdateConstraints];
     
@@ -1195,6 +1354,7 @@ options:NSNumericSearch] != NSOrderedAscending)
 	_isUserBeingAskedForNewPasscode = YES;
 	_isUserConfirmingPasscode = NO;
 	_tempPasscode = @"";
+	_currentDigitPasscode = @"";
 	
 	CATransition *transition = [CATransition animation];
 	[transition setDelegate: self];
@@ -1211,6 +1371,7 @@ options:NSNumericSearch] != NSOrderedAscending)
 
 
 - (void)_askForConfirmationPasscode {
+	_currentDigitPasscode = @"";
 	_isUserBeingAskedForNewPasscode = NO;
 	_isUserConfirmingPasscode = YES;
 	_failedAttemptLabel.hidden = YES;
@@ -1230,6 +1391,7 @@ options:NSNumericSearch] != NSOrderedAscending)
 - (void)_denyAccess {
 	[self _resetTextFields];
 	_passcodeTextField.text = @"";
+	_currentDigitPasscode = @"";
     _OKButton.hidden = YES;
     
     CAKeyframeAnimation *animation = [CAKeyframeAnimation animationWithKeyPath: @"transform.translation.x"];
@@ -1276,7 +1438,9 @@ options:NSNumericSearch] != NSOrderedAscending)
 
 - (void)_resetTextFields {
     if (![_passcodeTextField isFirstResponder] && (!_isUsingTouchID || _useFallbackPasscode)) {
-        [_passcodeTextField becomeFirstResponder];
+		if (UI_USER_INTERFACE_IDIOM() != UIUserInterfaceIdiomPad || _displayedAsLockScreen) {
+			[_passcodeTextField becomeFirstResponder];
+		}
     }
 	_firstDigitTextField.secureTextEntry = NO;
 	_secondDigitTextField.secureTextEntry = NO;
@@ -1483,6 +1647,8 @@ options:NSNumericSearch] != NSOrderedAscending)
 
 - (void)_commonInit {
 	_isSimple = YES;
+	_numPadButtons = [NSMutableArray array];
+	_currentDigitTextFieldIndex = 0;
 	[self _loadDefaults];
 }
 
@@ -1630,10 +1796,10 @@ options:NSNumericSearch] != NSOrderedAscending)
     }
     else {
         if (UIInterfaceOrientationIsPortrait([UIApplication sharedApplication].statusBarOrientation)) {
-            _animatingView.frame = CGRectMake(0, 0, [UIApplication sharedApplication].keyWindow.frame.size.width, [UIApplication sharedApplication].keyWindow.frame.size.height);
+			_animatingView.frame = UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad && !_displayedAsLockScreen ? CGRectMake(0, 0, LTHPasscodeiPadPopUpWidth, LTHPasscodeiPadPopUpHeight) : CGRectMake(0, 0, [UIApplication sharedApplication].keyWindow.frame.size.width, [UIApplication sharedApplication].keyWindow.frame.size.height);
         }
         else {
-            _animatingView.frame = CGRectMake(0, 0, [UIApplication sharedApplication].keyWindow.frame.size.height, [UIApplication sharedApplication].keyWindow.frame.size.width);
+            _animatingView.frame = UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad && !_displayedAsLockScreen ? CGRectMake(0, 0, LTHPasscodeiPadPopUpWidth, LTHPasscodeiPadPopUpHeight) : CGRectMake(0, 0, [UIApplication sharedApplication].keyWindow.frame.size.height, [UIApplication sharedApplication].keyWindow.frame.size.width);
         }
     }
 }
@@ -1673,7 +1839,7 @@ options:NSNumericSearch] != NSOrderedAscending)
     CGAffineTransform transform = CGAffineTransformMakeRotation(angle);
 	
     [self setIfNotEqualTransform: transform
-						   frame: self.view.window.bounds];
+						   frame: UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad && !_displayedAsLockScreen ? CGRectMake(0, 0, LTHPasscodeiPadPopUpWidth, LTHPasscodeiPadPopUpHeight) : self.view.window.bounds];
 }
 
 

@@ -284,6 +284,13 @@
  */
 - (void)showForDisablingPasscodeInViewController:(UIViewController *)viewController asModal:(BOOL)isModal;
 /**
+ @brief				   Used for entering the passcode.
+ @details              The back bar button is hidden by default. Set @c hidesBackButton to @c NO if you want it to be visible.
+ @param	viewController The view controller where the passcode view controller will be displayed.
+ @param asModal        Set to @c YES to present as a modal, or to @c NO to push on the current nav stack.
+ */
+- (void)showForEnteringPasscodeInViewController:(UIViewController *)viewController asModal:(BOOL)isModal;
+/**
  @brief  Returns a Boolean value that indicates whether a simple, 4 digit (@c YES) or a complex passcode will be used (@c NO).
  @return @c YES if the passcode is simple, @c NO if the passcode is complex
  */

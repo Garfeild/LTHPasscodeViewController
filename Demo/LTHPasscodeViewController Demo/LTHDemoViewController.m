@@ -58,7 +58,8 @@
 	
 	[LTHPasscodeViewController sharedUser].delegate = self;
 	[LTHPasscodeViewController sharedUser].maxNumberOfAllowedFailedAttempts = 3;
-    
+	[LTHPasscodeViewController sharedUser].verticalOffset = -85;
+	
 	_changePasscode = [UIButton buttonWithType: UIButtonTypeCustom];
 	_enablePasscode = [UIButton buttonWithType: UIButtonTypeCustom];
 	_testPasscode = [UIButton buttonWithType: UIButtonTypeCustom];
@@ -136,9 +137,12 @@
 
 
 - (void)showLockViewForTestingPasscode {
-	[[LTHPasscodeViewController sharedUser] showLockScreenWithAnimation:YES
-                                                             withLogout:NO
-                                                         andLogoutTitle:nil];
+//	[[LTHPasscodeViewController sharedUser] showLockScreenWithAnimation:YES
+//                                                             withLogout:NO
+//                                                         andLogoutTitle:nil];
+	
+	[[LTHPasscodeViewController sharedUser] showForEnteringPasscodeInViewController:self
+																			asModal:YES];
 }
 
 
@@ -149,7 +153,7 @@
 
 - (void)showLockViewForTurningPasscodeOff {
 	[[LTHPasscodeViewController sharedUser] showForDisablingPasscodeInViewController:self
-                                                                             asModal:NO];
+                                                                             asModal:YES];
 }
 
 # pragma mark - LTHPasscodeViewController Delegates -
