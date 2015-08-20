@@ -136,9 +136,12 @@
 
 
 - (void)showLockViewForTestingPasscode {
-	[[LTHPasscodeViewController sharedUser] showLockScreenWithAnimation:YES
-                                                             withLogout:NO
-                                                         andLogoutTitle:nil];
+//	[[LTHPasscodeViewController sharedUser] showLockScreenWithAnimation:YES
+//                                                             withLogout:NO
+//                                                         andLogoutTitle:nil];
+	
+	[[LTHPasscodeViewController sharedUser] showForEnteringPasscodeInViewController:self
+																			asModal:YES];
 }
 
 
@@ -149,7 +152,7 @@
 
 - (void)showLockViewForTurningPasscodeOff {
 	[[LTHPasscodeViewController sharedUser] showForDisablingPasscodeInViewController:self
-                                                                             asModal:NO];
+                                                                             asModal:YES];
 }
 
 # pragma mark - LTHPasscodeViewController Delegates -
