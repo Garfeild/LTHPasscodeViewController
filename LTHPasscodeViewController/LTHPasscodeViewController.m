@@ -1074,7 +1074,7 @@ static const CGFloat LTHPasscodeiPadKeyboardOffset = 25;
 	if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
 		navController.modalPresentationStyle = UIModalPresentationFormSheet;
 		navController.modalTransitionStyle = UIModalTransitionStyleCrossDissolve;
-		navController.preferredContentSize = CGSizeMake(320, 480);
+		navController.preferredContentSize = CGSizeMake(LTHPasscodeiPadPopUpWidth, LTHPasscodeiPadPopUpHeight);
 	}
 	
 	// Make sure nav bar for logout is off the screen
@@ -1097,6 +1097,13 @@ static const CGFloat LTHPasscodeiPadKeyboardOffset = 25;
 	[viewController presentViewController:navController
 								 animated:YES
 							   completion:nil];
+	
+	if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
+		if (!LTHiOS8) {
+			navController.view.superview.bounds = CGRectMake(0, 0, LTHPasscodeiPadPopUpWidth, LTHPasscodeiPadPopUpHeight + navController.navigationBar.frame.size.height);
+		}
+	}
+	
 	[self rotateAccordingToStatusBarOrientationAndSupportedOrientations];
 }
 
