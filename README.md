@@ -1,6 +1,9 @@
 # LTHPasscodeViewController
 Simple to use iOS 7 style Passcode - the one you get in Settings when changing your passcode.
 
+This fork for changing iPad view to:
+![alt tag](https://raw.github.com/maximbilan/LTHPasscodeViewController/master/Img/img1.png)
+
 # How to use
 Drag the contents of `LTHPasscodeViewController` to your project, or add `pod 'LTHPasscodeViewController'` to your podspec file.
 
