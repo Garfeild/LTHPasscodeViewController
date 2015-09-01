@@ -439,8 +439,8 @@ static const CGFloat LTHPasscodeiPadKeyboardOffset = 25;
 	[self _resetUI];
 	[_passcodeTextField resignFirstResponder];
 	
-    if ([self.delegate respondsToSelector: @selector(passcodeViewControllerWillClose)]) {
-		[self.delegate performSelector: @selector(passcodeViewControllerWillClose)];
+	if ([self.delegate respondsToSelector: @selector(passcodeViewControllerWillClose:)]) {
+		[self.delegate passcodeViewControllerWillClose:YES];
     }
 // Or, if you prefer by notifications:
 //	[[NSNotificationCenter defaultCenter] postNotificationName: @"passcodeViewControllerWillClose"
@@ -494,8 +494,8 @@ static const CGFloat LTHPasscodeiPadKeyboardOffset = 25;
 			}
 		}
 	} completion: ^(BOOL finished) {
-        if ([self.delegate respondsToSelector: @selector(passcodeViewControllerWillClose)]) {
-            [self.delegate performSelector: @selector(passcodeViewControllerWillClose)];
+		if ([self.delegate respondsToSelector: @selector(passcodeViewControllerWillClose:)]) {
+            [self.delegate passcodeViewControllerWillClose:NO];
         }
 // Or, if you prefer by notifications:
 //		[[NSNotificationCenter defaultCenter] postNotificationName: @"passcodeViewControllerWillClose"
