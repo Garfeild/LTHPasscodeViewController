@@ -23,6 +23,9 @@
  */
 - (void)passcodeWasEnteredSuccessfully;
 /**
+ */
+- (void)passcodeWasSavedSuccessfully;
+/**
  @brief Called when the logout button was pressed.
  */
 - (void)logoutButtonWasPressed;

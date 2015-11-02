@@ -261,7 +261,10 @@ static const CGFloat LTHPasscodeiPadKeyboardOffset = 25;
         
         return;
     }
-    
+	else if ( self.delegate && [self.delegate respondsToSelector:@selector(passcodeWasSavedSuccessfully)] ) {
+	  [self.delegate passcodeWasSavedSuccessfully];
+	}
+  
     [LTHKeychainUtils storeUsername:_keychainPasscodeUsername
                          andPassword:passcode
                       forServiceName:_keychainServiceName
@@ -341,6 +344,7 @@ static const CGFloat LTHPasscodeiPadKeyboardOffset = 25;
     [super viewDidLoad];
 	
 	self.view.backgroundColor = _backgroundColor;
+  
 	if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad && !_displayedAsLockScreen) {
 		self.view.frame = CGRectMake(0, 0, LTHPasscodeiPadPopUpWidth, LTHPasscodeiPadPopUpHeight);
 	}
@@ -602,7 +606,15 @@ static const CGFloat LTHPasscodeiPadKeyboardOffset = 25;
 		
 		UIButton *button = [[UIButton alloc] initWithFrame: CGRectMake(x, y, width, height)];
 		button.tag = i;
+	  if ( i == 9 || i == 11 ) {
 		[button setImage:[UIImage imageNamed:[NSString stringWithFormat:@"%@.png", @(i + 1)]] forState:UIControlStateNormal];
+	  }
+	  else {
+		NSString *title = ( i == 10 ) ? @"0" : [NSString stringWithFormat:@"%@", @(i+1)];
+		[button setTitle:title forState:UIControlStateNormal];
+		[button setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
+		button.titleLabel.font = [UIFont systemFontOfSize:22];
+	  }
 		button.backgroundColor = [UIColor whiteColor];
 		if (i == 9) {
 			button.enabled = NO;
@@ -1701,8 +1713,8 @@ static const CGFloat LTHPasscodeiPadKeyboardOffset = 25;
     _iPadFontSizeModifier = 1.5;
     _iPhoneHorizontalGap = 40.0;
     _horizontalGap = UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad ? _iPhoneHorizontalGap * _iPadFontSizeModifier : _iPhoneHorizontalGap;
-    _verticalGap = UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad ? 60.0f : 25.0f;
-    _modifierForBottomVerticalGap = UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad ? 2.6f : 3.0f;
+    _verticalGap = UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad ? 40.0f : 25.0f;
+    _modifierForBottomVerticalGap = UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad ? 2.f : 3.0f;
     _failedAttemptLabelGap = _verticalGap * _modifierForBottomVerticalGap - 2.0f;
     _passcodeOverlayHeight = UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad ? 96.0f : 40.0f;
 }
@@ -1712,10 +1724,10 @@ static const CGFloat LTHPasscodeiPadKeyboardOffset = 25;
     _labelFontSize = 15.0;
     _passcodeFontSize = 33.0;
     _labelFont = UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad ?
-    [UIFont fontWithName: @"AvenirNext-Regular" size:_labelFontSize * _iPadFontSizeModifier] :
+    [UIFont fontWithName: @"AvenirNext-Regular" size:_labelFontSize] :
     [UIFont fontWithName: @"AvenirNext-Regular" size:_labelFontSize];
     _passcodeFont = UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad ?
-    [UIFont fontWithName: @"AvenirNext-Regular" size: _passcodeFontSize * _iPadFontSizeModifier] :
+    [UIFont fontWithName: @"AvenirNext-Regular" size: _passcodeFontSize] :
     [UIFont fontWithName: @"AvenirNext-Regular" size: _passcodeFontSize];
 }
 
@@ -1779,14 +1791,7 @@ static const CGFloat LTHPasscodeiPadKeyboardOffset = 25;
 
 #pragma mark - Handling rotation
 - (NSUInteger)supportedInterfaceOrientations {
-	if (_displayedAsLockScreen)
-        return LTHiOS8 ? UIInterfaceOrientationMaskPortrait : UIInterfaceOrientationMaskAll;
-	// I'll be honest and mention I have no idea why this line of code below works.
-	// Without it, if you present the passcode view as lockscreen (directly on the window)
-	// and then inside of a modal, the orientation will be wrong.
-	
-	// If you could explain why, I'd be more than grateful :)
-	return UIInterfaceOrientationPortraitUpsideDown;
+	  return UIInterfaceOrientationMaskAll;
 }
 
 
@@ -1841,12 +1846,14 @@ static const CGFloat LTHPasscodeiPadKeyboardOffset = 25;
 
 
 - (void)rotateAccordingToStatusBarOrientationAndSupportedOrientations {
+  /*
 	UIInterfaceOrientation orientation = [self desiredOrientation];
     CGFloat angle = UIInterfaceOrientationAngleOfOrientation(orientation);
     CGAffineTransform transform = CGAffineTransformMakeRotation(angle);
 	
     [self setIfNotEqualTransform: transform
 						   frame: UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad && !_displayedAsLockScreen ? CGRectMake(0, 0, LTHPasscodeiPadPopUpWidth, LTHPasscodeiPadPopUpHeight) : self.view.window.bounds];
+   */
 }
 
 
