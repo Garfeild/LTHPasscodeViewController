@@ -259,6 +259,8 @@
  */
 @property (nonatomic, assign) BOOL allowUnlockWithTouchID;
 
+@property (nonatomic, assign) BOOL shouldLockScreen;
+
 /**
  @brief				Used for displaying the lock. The passcode view is added directly on the keyWindow.
  @param hasLogout   Set to @c YES for a navBar with a Logout button, set to @c NO for no navBar.

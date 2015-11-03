@@ -1557,6 +1557,8 @@ static const CGFloat LTHPasscodeiPadKeyboardOffset = 25;
 
 #pragma mark - Notification Observers
 - (void)_applicationDidEnterBackground {
+  
+  if ( self.shouldLockScreen ) {
 	if ([self _doesPasscodeExist]) {
         if ([_passcodeTextField isFirstResponder]) {
             _useFallbackPasscode = NO;
@@ -1580,19 +1582,23 @@ static const CGFloat LTHPasscodeiPadKeyboardOffset = 25;
 				[[UIApplication sharedApplication].keyWindow addSubview: _coverView];
 		}
 	}
+  }
 }
 
 
 - (void)_applicationDidBecomeActive {
+  if ( self.shouldLockScreen ) {
     if(_isUsingTouchID && !_useFallbackPasscode) {
         _animatingView.hidden = YES;
         [_passcodeTextField resignFirstResponder];
     }
 	_coverView.hidden = YES;
+  }
 }
 
 
 - (void)_applicationWillEnterForeground {
+  if ( self.shouldLockScreen ) {
 	if ([self _doesPasscodeExist] &&
 		[self _didPasscodeTimerEnd]) {
         _useFallbackPasscode = NO;
@@ -1613,14 +1619,17 @@ static const CGFloat LTHPasscodeiPadKeyboardOffset = 25;
                                andLogoutTitle:nil];
         }
 	}
+  }
 }
 
 
 - (void)_applicationWillResignActive {
+  if ( self.shouldLockScreen ) {
 	if ([self _doesPasscodeExist] && !([self isCurrentlyOnScreen] && [self displayedAsLockScreen])) {
         _useFallbackPasscode = NO;
 		[self _saveTimerStartTime];
 	}
+  }
 }
 
 
